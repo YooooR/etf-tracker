@@ -52,25 +52,29 @@ async function main() {
                 
                 if (json.status === 200 && json.data) {
                     json.data.forEach(item => {
-                        const exDate = item.CashExDividendTradingDate || item.StockExDividendTradingDate || '';
+                        const cashExDate = item.CashExDividendTradingDate || '';
+                        const stockExDate = item.StockExDividendTradingDate || '';
                         const payDate = item.CashDividendPaymentDate || '';
                         
                         const cashDiv = item.CashEarningsDistribution || 0;
                         const stockDiv = item.StockEarningsDistribution || 0;
 
-                        // Check if exDate or payDate is within the next 7 days
-                        const isExDateUpcoming = exDate >= todayStr && exDate <= nextWeekStr;
+                        // Check each date independently within next 7 days
+                        const isCashExUpcoming = cashExDate >= todayStr && cashExDate <= nextWeekStr;
+                        const isStockExUpcoming = stockExDate >= todayStr && stockExDate <= nextWeekStr;
                         const isPayDateUpcoming = payDate >= todayStr && payDate <= nextWeekStr;
 
-                        if (isExDateUpcoming || isPayDateUpcoming) {
+                        if (isCashExUpcoming || isStockExUpcoming || isPayDateUpcoming) {
                             upcomingEvents.push({
                                 code: t.etfCode,
                                 name: t.etfName,
-                                exDate,
+                                cashExDate,
+                                stockExDate,
                                 payDate,
                                 cashDiv,
                                 stockDiv,
-                                exTarget: isExDateUpcoming,
+                                cashExTarget: isCashExUpcoming,
+                                stockExTarget: isStockExUpcoming,
                                 payTarget: isPayDateUpcoming
                             });
                         }
@@ -90,7 +94,7 @@ async function main() {
         const contents = upcomingEvents.map(e => {
             const bodyContents = [];
             
-            if (e.exTarget) {
+            if (e.cashExTarget) {
                 bodyContents.push({
                     type: 'box',
                     layout: 'horizontal',
@@ -107,7 +111,29 @@ async function main() {
                                 { type: 'text', text: '除息', color: '#ffffff', size: 'xs', align: 'center', weight: 'bold' }
                             ]
                         },
-                        { type: 'text', text: e.exDate, color: '#e74c3c', size: 'sm', weight: 'bold', gravity: 'center' }
+                        { type: 'text', text: e.cashExDate, color: '#e74c3c', size: 'sm', weight: 'bold', gravity: 'center' }
+                    ]
+                });
+            }
+
+            if (e.stockExTarget) {
+                bodyContents.push({
+                    type: 'box',
+                    layout: 'horizontal',
+                    spacing: 'md',
+                    contents: [
+                        {
+                            type: 'box',
+                            layout: 'vertical',
+                            backgroundColor: '#e67e22',
+                            cornerRadius: 'sm',
+                            paddingAll: '2px',
+                            width: '45px',
+                            contents: [
+                                { type: 'text', text: '除權', color: '#ffffff', size: 'xs', align: 'center', weight: 'bold' }
+                            ]
+                        },
+                        { type: 'text', text: e.stockExDate, color: '#e67e22', size: 'sm', weight: 'bold', gravity: 'center' }
                     ]
                 });
             }
@@ -214,19 +240,26 @@ async function main() {
             ? { type: 'carousel', contents: contents.slice(0, 10) } // LINE carousel limit is 10
             : contents[0];
 
-        // Build urgent text for today/tomorrow ex-dividend and payment
+        // Build urgent text for today/tomorrow events
         let urgentText = '';
         upcomingEvents.forEach(e => {
-            // 除息提醒
-            if (e.exTarget && (e.exDate === todayStr || e.exDate === tomorrowStr)) {
-                const dayStr = e.exDate === todayStr ? '今天' : '明天';
+            // 現金除息提醒
+            if (e.cashExTarget && (e.cashExDate === todayStr || e.cashExDate === tomorrowStr)) {
+                const dayStr = e.cashExDate === todayStr ? '今天' : '明天';
                 urgentText += `⚠️ 除息提醒：${e.code} ${e.name}\n`;
-                urgentText += `📅 ${dayStr} (${e.exDate}) 除息\n`;
+                urgentText += `📅 ${dayStr} (${e.cashExDate}) 除息\n`;
                 if (e.cashDiv > 0) urgentText += `💵 現金股利：${e.cashDiv.toFixed(4)} 元/股\n`;
+                urgentText += '\n';
+            }
+            // 股票除權提醒
+            if (e.stockExTarget && (e.stockExDate === todayStr || e.stockExDate === tomorrowStr)) {
+                const dayStr = e.stockExDate === todayStr ? '今天' : '明天';
+                urgentText += `🟠 除權提醒：${e.code} ${e.name}\n`;
+                urgentText += `📅 ${dayStr} (${e.stockExDate}) 除權\n`;
                 if (e.stockDiv > 0) urgentText += `📈 股票股利：${e.stockDiv.toFixed(4)} 元/股\n`;
                 urgentText += '\n';
             }
-            // 發放提醒
+            // 股息發放提醒
             if (e.payTarget && (e.payDate === todayStr || e.payDate === tomorrowStr)) {
                 const dayStr = e.payDate === todayStr ? '今天' : '明天';
                 urgentText += `💰 股息發放提醒：${e.code} ${e.name}\n`;
