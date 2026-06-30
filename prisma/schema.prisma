@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int              @id @default(autoincrement())
+  username       String           @unique
+  passwordHash   String
+  displayName    String
+  createdAt      DateTime         @default(now())
+  statements     Statement[]
+  transactions   Transaction[]
+  dividends      Dividend[]
+  lendingIncomes LendingIncome[]
+}
+
+model Statement {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  yearMonth      String           // "2025-12"
+  imageUrls      String           @default("[]") // JSON array
+  parsed         Boolean          @default(false)
+  aiResult       String?          // JSON string of AI parsing result
+  createdAt      DateTime         @default(now())
+  user           User             @relation(fields: [userId], references: [id])
+  transactions   Transaction[]
+  lendingIncomes LendingIncome[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  statementId Int?
+  date        DateTime
+  etfCode     String
+  etfName     String
+  action      String     // "BUY" or "SELL"
+  shares      Int
+  price       Float
+  amount      Float
+  fee         Float      @default(0)
+  tax         Float      @default(0)
+  netAmount   Float      @default(0)
+  createdAt   DateTime   @default(now())
+  user        User       @relation(fields: [userId], references: [id])
+  statement   Statement? @relation(fields: [statementId], references: [id])
+
+  @@index([userId])
+  @@index([etfCode])
+  @@index([date])
+}
+
+model Dividend {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  etfCode       String
+  etfName       String
+  exDate        DateTime
+  paymentDate   DateTime
+  cashDividend  Float    @default(0)
+  stockDividend Float    @default(0)
+  shares        Int
+  totalAmount   Float    @default(0)
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([etfCode])
+}
+
+model LendingIncome {
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  statementId Int?
+  yearMonth   String     // "2025-12"
+  etfCode     String
+  etfName     String
+  totalIncome Float      @default(0)
+  fee         Float      @default(0)
+  tax         Float      @default(0)
+  netIncome   Float      @default(0)
+  createdAt   DateTime   @default(now())
+  user        User       @relation(fields: [userId], references: [id])
+  statement   Statement? @relation(fields: [statementId], references: [id])
+
+  @@index([userId])
+  @@index([etfCode])
+}

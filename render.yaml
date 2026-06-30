@@ -1,0 +1,12 @@
+services:
+  - type: cron
+    name: etf-line-push
+    runtime: node
+    schedule: "0 2 * * *"   # 每天 UTC 02:00 = 台灣時間 10:00
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: node scripts/line-push.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # 在 Render Dashboard 手動填入，不寫在這裡
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false          # 在 Render Dashboard 手動填入，不寫在這裡
