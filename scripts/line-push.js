@@ -214,12 +214,23 @@ async function main() {
             ? { type: 'carousel', contents: contents.slice(0, 10) } // LINE carousel limit is 10
             : contents[0];
 
-        // Build urgent text for today/tomorrow ex-dividend
+        // Build urgent text for today/tomorrow ex-dividend and payment
         let urgentText = '';
         upcomingEvents.forEach(e => {
+            // 除息提醒
             if (e.exTarget && (e.exDate === todayStr || e.exDate === tomorrowStr)) {
                 const dayStr = e.exDate === todayStr ? '今天' : '明天';
-                urgentText += `⚠️ 提醒：${e.code} ${e.name} 將於 ${dayStr} (${e.exDate}) 除息！\n`;
+                urgentText += `⚠️ 除息提醒：${e.code} ${e.name}\n`;
+                urgentText += `📅 ${dayStr} (${e.exDate}) 除息\n`;
+                if (e.cashDiv > 0) urgentText += `💵 現金股利：${e.cashDiv.toFixed(4)} 元/股\n`;
+                if (e.stockDiv > 0) urgentText += `📈 股票股利：${e.stockDiv.toFixed(4)} 元/股\n`;
+                urgentText += '\n';
+            }
+            // 發放提醒
+            if (e.payTarget && (e.payDate === todayStr || e.payDate === tomorrowStr)) {
+                const dayStr = e.payDate === todayStr ? '今天' : '明天';
+                urgentText += `💰 股息發放提醒：${e.code} ${e.name}\n`;
+                urgentText += `📅 ${dayStr} (${e.payDate}) 入帳\n`;
                 if (e.cashDiv > 0) urgentText += `💵 現金股利：${e.cashDiv.toFixed(4)} 元/股\n`;
                 if (e.stockDiv > 0) urgentText += `📈 股票股利：${e.stockDiv.toFixed(4)} 元/股\n`;
                 urgentText += '\n';
