@@ -2,7 +2,7 @@ name: ETF LINE 除權息推播
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 00:00 = 台灣時間 08:00
+    - cron: '30 0 * * *'   # 每天 UTC 00:30 = 台灣時間 08:30（避開整點擁擠）
   workflow_dispatch:        # 允許手動觸發（方便測試）
 
 jobs:
